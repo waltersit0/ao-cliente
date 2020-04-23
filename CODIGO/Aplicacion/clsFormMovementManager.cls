@@ -73,6 +73,8 @@ Private Sub Formulario_MouseMove(Button As Integer, Shift As Integer, X As Singl
 'Last Modify Date: 01/07/10
 'Implements the mouse move event of the form.
 '***************************************************
+    On Error Resume Next  'marranti re incha pelota esto
+    
     If LimitY > 0 Then
         If Y > LimitY Then Exit Sub
     End If
@@ -81,4 +83,7 @@ Private Sub Formulario_MouseMove(Button As Integer, Shift As Integer, X As Singl
         Formulario.Left = Formulario.Left + (X - DragX)
         Formulario.Top = Formulario.Top + (Y - Dragy)
     End If
+    
+err:
+    
 End Sub

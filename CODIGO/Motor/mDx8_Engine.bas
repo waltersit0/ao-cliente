@@ -142,7 +142,7 @@ Public Function Engine_DirectX8_Init() As Boolean
     
     EndTime = timeGetTime
 
-    If Err Then
+    If err Then
         MsgBox JsonLanguage.item("ERROR_DIRECTX_INIT").item("TEXTO")
         Engine_DirectX8_Init = False
         Exit Function

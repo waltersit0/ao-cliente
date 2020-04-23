@@ -9,11 +9,11 @@ Public Const MAPS_SOURCE_FILE_EXT As String = ".map"
 Public Const MAPS_RESOURCE_FILE As String = "Mapas.AO"
 Public Const MAPS_PATCH_FILE As String = "Mapas.PATCH"
 
-Public GrhDatContra() As Byte ' Contrasena
-Public GrhUsaContra As Boolean ' Usa Contrasena?
+Public GrhDatContra() As Byte ' Contraseña
+Public GrhUsaContra As Boolean ' Usa Contraseña?
 
-Public MapsDatContra() As Byte ' Contrasena
-Public MapsUsaContra As Boolean  ' Usa Contrasena?
+Public MapsDatContra() As Byte ' Contraseña
+Public MapsUsaContra As Boolean  ' Usa Contraseña?
 
 'This structure will describe our binary file's
 'size, number and version of contained files
@@ -40,6 +40,7 @@ End Enum
 
 Private Declare Function compress Lib "zlib.dll" (dest As Any, destlen As Any, src As Any, ByVal srclen As Long) As Long
 Private Declare Function uncompress Lib "zlib.dll" (dest As Any, destlen As Any, src As Any, ByVal srclen As Long) As Long
+Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (ByRef dest As Any, ByRef source As Any, ByVal byteCount As Long)
 
 'BitMaps Strucures
 Public Type BITMAPFILEHEADER
@@ -49,7 +50,6 @@ Public Type BITMAPFILEHEADER
     bfReserved2 As Integer
     bfOffBits As Long
 End Type
-
 Public Type BITMAPINFOHEADER
     biSize As Long
     biWidth As Long
@@ -63,18 +63,24 @@ Public Type BITMAPINFOHEADER
     biClrUsed As Long
     biClrImportant As Long
 End Type
-
 Public Type RGBQUAD
     rgbBlue As Byte
     rgbGreen As Byte
     rgbRed As Byte
     rgbReserved As Byte
 End Type
-
 Public Type BITMAPINFO
     bmiHeader As BITMAPINFOHEADER
     bmiColors(255) As RGBQUAD
 End Type
+
+Private Const BI_RGB As Long = 0
+Private Const BI_RLE8 As Long = 1
+Private Const BI_RLE4 As Long = 2
+Private Const BI_BITFIELDS As Long = 3
+Private Const BI_JPG As Long = 4
+Private Const BI_PNG As Long = 5
+
 
 'To get free bytes in drive
 Private Declare Function GetDiskFreeSpace Lib "kernel32" Alias "GetDiskFreeSpaceExA" (ByVal lpRootPathName As String, FreeBytesToCaller As Currency, bytesTotal As Currency, FreeBytesTotal As Currency) As Long
@@ -89,8 +95,6 @@ Public Sub GenerateContra(ByVal Contra As String, Optional Modo As Byte = 0)
 On Error Resume Next
 
     Dim LoopC As Byte
-    Dim Upper_grhDatContra As Long, Upper_mapsDatContra As Long
-    
     If Modo = 0 Then
         Erase GrhDatContra
     ElseIf Modo = 1 Then
@@ -100,18 +104,14 @@ On Error Resume Next
     If LenB(Contra) <> 0 Then
         If Modo = 0 Then
             ReDim GrhDatContra(Len(Contra) - 1)
-            Upper_grhDatContra = UBound(GrhDatContra)
-            
-            For LoopC = 0 To Upper_grhDatContra
-                GrhDatContra(LoopC) = Asc(mid$(Contra, LoopC + 1, 1))
+            For LoopC = 0 To UBound(GrhDatContra)
+                GrhDatContra(LoopC) = Asc(mid(Contra, LoopC + 1, 1))
             Next LoopC
             GrhUsaContra = True
         ElseIf Modo = 1 Then
             ReDim MapsDatContra(Len(Contra) - 1)
-            Upper_mapsDatContra = UBound(MapsDatContra)
-            
-            For LoopC = 0 To Upper_mapsDatContra
-                MapsDatContra(LoopC) = Asc(mid$(Contra, LoopC + 1, 1))
+            For LoopC = 0 To UBound(MapsDatContra)
+                MapsDatContra(LoopC) = Asc(mid(Contra, LoopC + 1, 1))
             Next LoopC
             MapsUsaContra = True
         End If
@@ -127,7 +127,7 @@ End Sub
 
 Private Function General_Drive_Get_Free_Bytes(ByVal DriveName As String) As Currency
 '**************************************************************
-'Author: Juan Martin Sotuyo Dodero
+'Author: Juan Martín Sotuyo Dodero
 'Last Modify Date: 6/07/2004
 '
 '**************************************************************
@@ -246,8 +246,6 @@ Private Function Get_InfoHeader(ByRef ResourcePath As String, ByRef FileName As 
     Dim ResourceFilePath As String
     Dim FileHead As FILEHEADER
     
-    Dim ERROR_LEER_ARCHIVO As String
-    
 On Local Error GoTo ErrHandler
 
     If Modo = 0 Then
@@ -267,7 +265,7 @@ On Local Error GoTo ErrHandler
         
         'Check the file for validity
         If LOF(ResourceFile) <> FileHead.lngFileSize Then
-            MsgBox JsonLanguage.Item("ERROR_ARCHIVO_CORRUPTO").Item("TEXTO") & ": " & ResourceFilePath, , JsonLanguage.Item("Error").Item("TEXTO")
+            MsgBox "Archivo de recursos dañado. " & ResourceFilePath, , "Error"
             Close ResourceFile
             Exit Function
         End If
@@ -283,11 +281,7 @@ Exit Function
 ErrHandler:
     Close ResourceFile
     
-    ERROR_LEER_ARCHIVO = JsonLanguage.Item("ERROR_LEER_ARCHIVO").Item("TEXTO")
-    ERROR_LEER_ARCHIVO = Replace$(ERROR_LEER_ARCHIVO, "VAR_ARCHIVO", ResourceFilePath)
-    ERROR_LEER_ARCHIVO = Replace$(ERROR_LEER_ARCHIVO, "VAR_ERROR", Err.number & " : " & Err.Description)
-    
-    Call MsgBox(ERROR_LEER_ARCHIVO)
+    Call MsgBox("Error al intentar leer el archivo " & ResourceFilePath & ". Razón: " & err.number & " : " & err.Description, vbOKOnly, "Error")
 End Function
 
 ''
@@ -297,7 +291,7 @@ End Function
 
 Private Sub Compress_Data(ByRef data() As Byte, Optional Modo As Byte = 0)
 '*****************************************************************
-'Author: Juan Martin Dotuyo Dodero
+'Author: Juan Martín Dotuyo Dodero
 'Last Modify Date: 17/07/2012 - ^[GS]^
 'Compresses binary data avoiding data loses
 '*****************************************************************
@@ -305,7 +299,6 @@ Private Sub Compress_Data(ByRef data() As Byte, Optional Modo As Byte = 0)
     Dim DimBuffer As Long
     Dim BufTemp() As Byte
     Dim LoopC As Long
-    Dim Upper_grhDatContra As Long, Upper_mapsDatContra As Long
     
     Dimensions = UBound(data) + 1
     
@@ -328,17 +321,13 @@ Private Sub Compress_Data(ByRef data() As Byte, Optional Modo As Byte = 0)
     ' GSZAO - Seguridad
     If Modo = 0 And GrhUsaContra = True Then
         If UBound(GrhDatContra) <= UBound(data) And UBound(GrhDatContra) <> 0 Then
-            Upper_grhDatContra = UBound(GrhDatContra)
-            
-            For LoopC = 0 To Upper_grhDatContra
+            For LoopC = 0 To UBound(GrhDatContra)
                 data(LoopC) = data(LoopC) Xor GrhDatContra(LoopC)
             Next LoopC
         End If
     ElseIf Modo = 1 And MapsUsaContra = True Then
         If UBound(MapsDatContra) <= UBound(data) And UBound(MapsDatContra) <> 0 Then
-            Upper_mapsDatContra = UBound(MapsDatContra)
-            
-            For LoopC = 0 To Upper_mapsDatContra
+            For LoopC = 0 To UBound(MapsDatContra)
                 data(LoopC) = data(LoopC) Xor MapsDatContra(LoopC)
             Next LoopC
         End If
@@ -355,30 +344,25 @@ End Sub
 
 Private Sub Decompress_Data(ByRef data() As Byte, ByVal OrigSize As Long, Optional Modo As Byte = 0)
 '*****************************************************************
-'Author: Juan Martin Dotuyo Dodero
+'Author: Juan Martín Dotuyo Dodero
 'Last Modify Date: 16/07/2012 - ^[GS]^
 'Decompresses binary data
 '*****************************************************************
     Dim BufTemp() As Byte
     Dim LoopC As Integer
-    Dim Upper_grhDatContra As Long, Upper_mapsDatContra As Long
     
     ReDim BufTemp(OrigSize - 1)
     
     ' GSZAO - Seguridad
     If Modo = 0 And GrhUsaContra = True Then
         If UBound(GrhDatContra) <= UBound(data) And UBound(GrhDatContra) <> 0 Then
-            Upper_grhDatContra = UBound(GrhDatContra)
-            
-            For LoopC = 0 To Upper_grhDatContra
+            For LoopC = 0 To UBound(GrhDatContra)
                 data(LoopC) = data(LoopC) Xor GrhDatContra(LoopC)
             Next LoopC
         End If
     ElseIf Modo = 1 And MapsUsaContra = True Then
         If UBound(MapsDatContra) <= UBound(data) And UBound(MapsDatContra) <> 0 Then
-            Upper_mapsDatContra = UBound(MapsDatContra)
-            
-            For LoopC = 0 To Upper_mapsDatContra
+            For LoopC = 0 To UBound(MapsDatContra)
                 data(LoopC) = data(LoopC) Xor MapsDatContra(LoopC)
             Next LoopC
         End If
@@ -418,20 +402,18 @@ Public Function Compress_Files(ByRef SourcePath As String, ByRef OutputPath As S
     Dim FileHead As FILEHEADER
     Dim InfoHead() As INFOHEADER
     Dim LoopC As Long
-    
-    Dim ERROR_EXT_NO_ENCONTRADA As String
 
 On Local Error GoTo ErrHandler
     If Modo = 0 Then
         OutputFilePath = OutputPath & GRH_RESOURCE_FILE
         'If GraficosPNG = False Then ' GSZAO
-            SourceFileName = Dir$(SourcePath & "*" & BMP_SOURCE_FILE_EXT, vbNormal)
+            SourceFileName = Dir(SourcePath & "*" & BMP_SOURCE_FILE_EXT, vbNormal)
         'Else
-         '   SourceFileName = Dir$(SourcePath & "*" & PNG_SOURCE_FILE_EXT, vbNormal)
+         '   SourceFileName = Dir(SourcePath & "*" & PNG_SOURCE_FILE_EXT, vbNormal)
         'End If
     ElseIf Modo = 1 Then
         OutputFilePath = OutputPath & MAPS_RESOURCE_FILE
-        SourceFileName = Dir$(SourcePath & "*" & MAPS_SOURCE_FILE_EXT, vbNormal)
+        SourceFileName = Dir(SourcePath & "*" & MAPS_SOURCE_FILE_EXT, vbNormal)
     End If
     
     ' Create list of all files to be compressed
@@ -442,11 +424,11 @@ On Local Error GoTo ErrHandler
         InfoHead(FileHead.lngNumFiles - 1).strFileName = UCase$(SourceFileName)
         
         'Search new file
-        SourceFileName = Dir$()
+        SourceFileName = Dir()
     Wend
     
     'If Mode = 0 And frmMain.cmdGrhPNG.Value = 1 Then ' Comprimimos tambien los Graficos .PNG
-        SourceFileName = Dir$(SourcePath & "*" & PNG_SOURCE_FILE_EXT, vbNormal)
+        SourceFileName = Dir(SourcePath & "*" & PNG_SOURCE_FILE_EXT, vbNormal)
         ' Create list of all files to be compressed
         While LenB(SourceFileName) <> 0
             FileHead.lngNumFiles = FileHead.lngNumFiles + 1
@@ -455,12 +437,12 @@ On Local Error GoTo ErrHandler
             InfoHead(FileHead.lngNumFiles - 1).strFileName = UCase$(SourceFileName)
             
             'Search new file
-            SourceFileName = Dir$()
+            SourceFileName = Dir()
         Wend
     'End If
     
     'If Mode = 1 And frmMain.cmdMiniMap.Value = 1 Then ' agregamos tambien los BMP junto a los mapas
-        SourceFileName = Dir$(SourcePath & "*" & BMP_SOURCE_FILE_EXT, vbNormal)  ' GSZAO
+        SourceFileName = Dir(SourcePath & "*" & BMP_SOURCE_FILE_EXT, vbNormal)  ' GSZAO
         ' Create list of all files to be compressed
         While LenB(SourceFileName) <> 0
             FileHead.lngNumFiles = FileHead.lngNumFiles + 1
@@ -469,30 +451,26 @@ On Local Error GoTo ErrHandler
             InfoHead(FileHead.lngNumFiles - 1).strFileName = UCase$(SourceFileName)
             
             'Search new file
-            SourceFileName = Dir$()
+            SourceFileName = Dir()
         Wend
     'End If
     
     If FileHead.lngNumFiles = 0 Then
         'If GraficosPNG = False Then ' GSZAO
-            ERROR_EXT_NO_ENCONTRADA = JsonLanguage.Item("ERROR_EXT_NO_ENCONTRADA").Item("TEXTO")
-            ERROR_EXT_NO_ENCONTRADA = Replace$(ERROR_EXT_NO_ENCONTRADA, "VAR_EXT", BMP_SOURCE_FILE_EXT)
-            ERROR_EXT_NO_ENCONTRADA = Replace$(ERROR_EXT_NO_ENCONTRADA, "VAR_PATH", SourcePath)
-            
-            MsgBox ERROR_EXT_NO_ENCONTRADA, , JsonLanguage.Item("Error").Item("TEXTO")
+            MsgBox "No se encontraron archivos de extensión " & BMP_SOURCE_FILE_EXT & " en " & SourcePath & ".", , "Error"
         'Else
-        '    MsgBox "No se encontraron archivos de extension " & PNG_SOURCE_FILE_EXT & " en " & SourcePath & ".", , JsonLanguage.Item("Error").Item("TEXTO")
+        '    MsgBox "No se encontraron archivos de extensión " & PNG_SOURCE_FILE_EXT & " en " & SourcePath & ".", , "Error"
         'End If
         Exit Function
     End If
     
     If Not prgBar Is Nothing Then
-        prgBar.value = 0
+        prgBar.Value = 0
         prgBar.Max = FileHead.lngNumFiles + 1
     End If
     
     'Destroy file if it previuosly existed
-    If LenB(Dir$(OutputFilePath, vbNormal)) <> 0 Then
+    If LenB(Dir(OutputFilePath, vbNormal)) <> 0 Then
         Kill OutputFilePath
     End If
     
@@ -542,7 +520,7 @@ On Local Error GoTo ErrHandler
             Close SourceFile
         
             'Update progress bar
-            If Not prgBar Is Nothing Then prgBar.value = prgBar.value + 1
+            If Not prgBar Is Nothing Then prgBar.Value = prgBar.Value + 1
             DoEvents
         Next LoopC
         
@@ -565,7 +543,7 @@ ErrHandler:
     Erase InfoHead
     Close OutputFile
     
-    Call MsgBox(Replace$(JsonLanguage.Item("ERROR_CREAR_BINARIO").Item("TEXTO"), "VAR_ERROR", Err.number & " : " & Err.Description), vbOKOnly, JsonLanguage.Item("Error").Item("TEXTO"))
+    Call MsgBox("No se pudo crear el archivo binario. Razón: " & err.number & " : " & err.Description, vbOKOnly, "Error")
 End Function
 
 ''
@@ -644,7 +622,7 @@ On Local Error GoTo ErrHandler
 Exit Function
 
 ErrHandler:
-    Call MsgBox(Replace$(JsonLanguage.Item("ERROR_DECODE_RECURSOS").Item("TEXTO"), "VAR_ERROR", Err.number & " : " & Err.Description), vbOKOnly, JsonLanguage.Item("Error").Item("TEXTO"))
+    Call MsgBox("Error al intentar decodificar recursos. Razón: " & err.number & " : " & err.Description, vbOKOnly, "Error")
 End Function
 
 ''
@@ -669,7 +647,6 @@ Public Function Extract_Files(ByRef ResourcePath As String, ByRef OutputPath As 
     Dim SourceData() As Byte
     Dim FileHead As FILEHEADER
     Dim InfoHead() As INFOHEADER
-    Dim Upper_infoHead As Long
     Dim RequiredSpace As Currency
     
 On Local Error GoTo ErrHandler
@@ -687,7 +664,7 @@ On Local Error GoTo ErrHandler
     
         'Check the file for validity
         If LOF(ResourceFile) <> FileHead.lngFileSize Then
-            Call MsgBox(JsonLanguage.Item("ERROR_ARCHIVO_CORRUPTO").Item("TEXTO") & ": " & ResourceFilePath, , JsonLanguage.Item("Error").Item("TEXTO"))
+            Call MsgBox("Archivo de recursos dañado. " & ResourceFilePath, , "Error")
             Close ResourceFile
             Exit Function
         End If
@@ -698,11 +675,8 @@ On Local Error GoTo ErrHandler
         'Extract the INFOHEADER
         Get ResourceFile, , InfoHead
         
-        'Pre-Calculate info head's upperbound to improve performance
-        Upper_infoHead = UBound(InfoHead)
-        
         'Check if there is enough hard drive space to extract all files
-        For LoopC = 0 To Upper_infoHead
+        For LoopC = 0 To UBound(InfoHead)
             
             RequiredSpace = RequiredSpace + InfoHead(LoopC).lngFileSizeUncompressed
         Next LoopC
@@ -710,22 +684,19 @@ On Local Error GoTo ErrHandler
         If RequiredSpace >= General_Drive_Get_Free_Bytes(Left$(App.path, 3)) Then
             Erase InfoHead
             Close ResourceFile
-            Call MsgBox(JsonLanguage.Item("ERROR_SIN_ESPACIO").Item("TEXTO"), , JsonLanguage.Item("Error").Item("TEXTO"))
+            Call MsgBox("No hay suficiente espacio en el disco para extraer los archivos.", , "Error")
             Exit Function
         End If
     Close ResourceFile
     
     'Update progress bar
     If Not prgBar Is Nothing Then
-        prgBar.value = 0
+        prgBar.Value = 0
         prgBar.Max = FileHead.lngNumFiles + 1
     End If
     
-    'Pre-Calculate info head's upperbound to improve performance
-    Upper_infoHead = UBound(InfoHead)
-    
     'Extract all of the files from the binary file
-    For LoopC = 0 To Upper_infoHead
+    For LoopC = 0 To UBound(InfoHead)
         'Extract this file
         If Extract_File(ResourcePath, InfoHead(LoopC), SourceData) Then
             'Destroy file if it previuosly existed
@@ -744,12 +715,12 @@ On Local Error GoTo ErrHandler
             Erase SourceData
             Erase InfoHead
             
-            Call MsgBox(JsonLanguage.Item("ERROR_EXTRAER_ARCHIVO").Item("TEXTO") & ": " & InfoHead(LoopC).strFileName, vbOKOnly, JsonLanguage.Item("Error").Item("TEXTO"))
+            Call MsgBox("No se pudo extraer el archivo " & InfoHead(LoopC).strFileName, vbOKOnly, "Error")
             Exit Function
         End If
             
         'Update progress bar
-        If Not prgBar Is Nothing Then prgBar.value = prgBar.value + 1
+        If Not prgBar Is Nothing Then prgBar.Value = prgBar.Value + 1
         DoEvents
     Next LoopC
     
@@ -762,7 +733,7 @@ ErrHandler:
     Erase SourceData
     Erase InfoHead
     
-    Call MsgBox(Replace$(JsonLanguage.Item("ERROR_EXTRAER_BINARIO").Item("TEXTO"), "VAR_ERROR", Err.number & " : " & Err.Description), vbOKOnly, JsonLanguage.Item("Error").Item("TEXTO"))
+    Call MsgBox("No se pudo extraer el archivo binario correctamente. Razón: " & err.number & " : " & err.Description, vbOKOnly, "Error")
 End Function
 
 ''
@@ -789,7 +760,7 @@ Public Function Get_File_Data(ByRef ResourcePath As String, ByRef FileName As St
         Get_File_Data = Extract_File(ResourcePath, InfoHead, data, Modo)
     Else
         Get_File_Data = False
-        'Call MsgBox(JsonLanguage("ERROR_404").Item("TEXTO") & ": " & FileName)
+        'Call MsgBox("No se se encontro el recurso " & FileName)
     End If
 End Function
 
@@ -815,12 +786,12 @@ Public Function Get_Image(ByRef ResourcePath As String, ByRef FileName As String
     ExistFile = False
     
     If SoloBMP = True Then
-        If Get_InfoHeader(ResourcePath, FileName & ".BMP", InfoHead, 0) Then ' BMP?
+        If Get_InfoHeader(ResourcePath, FileName & ".BMP", InfoHead, 0) Then ' ¿BMP?
             FileName = FileName & ".BMP"
             ExistFile = True
         End If
     Else
-        If Get_InfoHeader(ResourcePath, FileName & ".BMP", InfoHead, 0) Then ' BMP?
+        If Get_InfoHeader(ResourcePath, FileName & ".BMP", InfoHead, 0) Then ' ¿BMP?
             FileName = FileName & ".BMP"
             ExistFile = True
         ElseIf Get_InfoHeader(ResourcePath, FileName & ".PNG", InfoHead, 0) Then ' Existe PNG?
@@ -832,7 +803,7 @@ Public Function Get_Image(ByRef ResourcePath As String, ByRef FileName As String
     If ExistFile = True Then
         If Extract_File(ResourcePath, InfoHead, data, 0) Then Get_Image = True
     Else
-        Call MsgBox(JsonLanguage("ERROR_404").Item("TEXTO") & ": " & FileName)
+        Call MsgBox("Get_Image: No se encontro el recurso " & FileName)
     End If
 End Function
 
@@ -996,7 +967,7 @@ On Local Error GoTo ErrHandler
         Get OldResourceFile, 1, OldFileHead
         'Check the file for validity
         If LOF(OldResourceFile) <> OldFileHead.lngFileSize Then
-            Call MsgBox(JsonLanguage.Item("ERROR_ARCHIVO_CORRUPTO").Item("TEXTO") & ": " & OldResourceFilePath, , JsonLanguage.Item("Error").Item("TEXTO"))
+            Call MsgBox("Archivo de recursos anterior dañado. " & OldResourceFilePath, , "Error")
             Close OldResourceFile
             Exit Function
         End If
@@ -1009,21 +980,21 @@ On Local Error GoTo ErrHandler
             Get NewResourceFile, 1, NewFileHead
             'Check the file for validity
             If LOF(NewResourceFile) <> NewFileHead.lngFileSize Then
-                Call MsgBox(JsonLanguage.Item("ERROR_ARCHIVO_CORRUPTO").Item("TEXTO") & ": " & NewResourceFilePath, , JsonLanguage.Item("Error").Item("TEXTO"))
+                Call MsgBox("Archivo de recursos anterior dañado. " & NewResourceFilePath, , "Error")
                 Close NewResourceFile
                 Close OldResourceFile
                 Exit Function
             End If
             
             'Destroy file if it previuosly existed
-            If LenB(Dir$(OutputFilePath, vbNormal)) <> 0 Then Kill OutputFilePath
+            If LenB(Dir(OutputFilePath, vbNormal)) <> 0 Then Kill OutputFilePath
             
             'Open the patch file
             OutputFile = FreeFile()
             Open OutputFilePath For Binary Access Read Write As OutputFile
                 
                 If Not prgBar Is Nothing Then
-                    prgBar.value = 0
+                    prgBar.Value = 0
                     prgBar.Max = (OldFileHead.lngNumFiles + NewFileHead.lngNumFiles) + 1
                 End If
                 
@@ -1037,7 +1008,7 @@ On Local Error GoTo ErrHandler
                   And ReadNext_InfoHead(NewResourceFile, NewFileHead, NewInfoHead, NewReadFiles) Then
                     
                     'Update
-                    prgBar.value = prgBar.value + 2
+                    prgBar.Value = prgBar.Value + 2
                     
                     Do 'Main loop
                         'Comparisons are between encrypted names, for ordering issues
@@ -1074,7 +1045,7 @@ On Local Error GoTo ErrHandler
                             End If
                             
                             'Update
-                            If Not prgBar Is Nothing Then prgBar.value = prgBar.value + 2
+                            If Not prgBar Is Nothing Then prgBar.Value = prgBar.Value + 2
                         
                         ElseIf OldInfoHead.strFileName < NewInfoHead.strFileName Then
                             
@@ -1091,7 +1062,7 @@ On Local Error GoTo ErrHandler
                             End If
                             
                             'Update
-                            If Not prgBar Is Nothing Then prgBar.value = prgBar.value + 1
+                            If Not prgBar Is Nothing Then prgBar.Value = prgBar.Value + 1
                         
                         Else
                             
@@ -1114,7 +1085,7 @@ On Local Error GoTo ErrHandler
                             End If
                             
                             'Update
-                            If Not prgBar Is Nothing Then prgBar.value = prgBar.value + 1
+                            If Not prgBar Is Nothing Then prgBar.Value = prgBar.Value + 1
                         End If
                         
                         DoEvents
@@ -1134,7 +1105,7 @@ On Local Error GoTo ErrHandler
                     Put OutputFile, , OldInfoHead
                     
                     'Update
-                    If Not prgBar Is Nothing Then prgBar.value = prgBar.value + 1
+                    If Not prgBar Is Nothing Then prgBar.Value = prgBar.Value + 1
                     DoEvents
                 Wend
                 
@@ -1151,7 +1122,7 @@ On Local Error GoTo ErrHandler
                     Put OutputFile, , data
                     
                     'Update
-                    If Not prgBar Is Nothing Then prgBar.value = prgBar.value + 1
+                    If Not prgBar Is Nothing Then prgBar.Value = prgBar.Value + 1
                     DoEvents
                 Wend
             
@@ -1172,7 +1143,7 @@ ErrHandler:
     Close NewResourceFile
     Close OldResourceFile
     
-    Call MsgBox(Replace$(JsonLanguage.Item("ERROR_CREAR_PARCHE").Item("TEXTO"), "VAR_ERROR", Err.number & " : " & Err.Description), vbOKOnly, JsonLanguage.Item("Error").Item("TEXTO"))
+    Call MsgBox("No se pudo terminar de crear el parche. Razón: " & err.number & " : " & err.Description, vbOKOnly, "Error")
 End Function
 
 ''
@@ -1229,7 +1200,7 @@ On Local Error GoTo ErrHandler
         Get ResourceFile, , FileHead
         'Check the file for validity
         If LOF(ResourceFile) <> FileHead.lngFileSize Then
-            Call MsgBox(JsonLanguage.Item("ERROR_ARCHIVO_CORRUPTO").Item("TEXTO") & ": " & ResourceFilePath, , JsonLanguage.Item("Error").Item("TEXTO"))
+            Call MsgBox("Archivo de recursos anterior dañado. " & ResourceFilePath, , "Error")
             Close ResourceFile
             Exit Function
         End If
@@ -1243,7 +1214,7 @@ On Local Error GoTo ErrHandler
             
             'Check the file version
             If OldResourceVersion <> FileHead.lngFileVersion Then
-                Call MsgBox(JsonLanguage.Item("ERROR_VERSIONES_RECURSOS").Item("TEXTO"), , JsonLanguage.Item("Error").Item("TEXTO"))
+                Call MsgBox("Incongruencia en versiones.", , "Error")
                 Close ResourceFile
                 Close PatchFile
                 Exit Function
@@ -1263,7 +1234,7 @@ On Local Error GoTo ErrHandler
                 Put OutputFile, , PatchFileHead
   
                 If Not prgBar Is Nothing Then
-                    prgBar.value = 0
+                    prgBar.Value = 0
                     prgBar.Max = PatchFileHead.lngNumFiles + 1
                 End If
                 
@@ -1295,7 +1266,7 @@ On Local Error GoTo ErrHandler
                             'Update
                             DataOutputPos = DataOutputPos + UBound(data) + 1
                             WrittenFiles = WrittenFiles + 1
-                            If Not prgBar Is Nothing Then prgBar.value = WrittenFiles
+                            If Not prgBar Is Nothing Then prgBar.Value = WrittenFiles
                         Else
                             Exit Do
                         End If
@@ -1305,7 +1276,7 @@ On Local Error GoTo ErrHandler
                         'Delete
                         Case PatchInstruction.Delete_File
                             If InfoHead.strFileName <> PatchInfoHead.strFileName Then
-                                Err.Description = JsonLanguage.Item("ERROR_VERSIONES_RECURSOS").Item("TEXTO")
+                                err.Description = "Incongruencia en archivos de recurso"
                                 GoTo ErrHandler
                             End If
                         
@@ -1328,9 +1299,9 @@ On Local Error GoTo ErrHandler
                                 'Update
                                 DataOutputPos = DataOutputPos + UBound(data) + 1
                                 WrittenFiles = WrittenFiles + 1
-                                If Not prgBar Is Nothing Then prgBar.value = WrittenFiles
+                                If Not prgBar Is Nothing Then prgBar.Value = WrittenFiles
                             Else
-                                Err.Description = JsonLanguage.Item("ERROR_VERSIONES_RECURSOS").Item("TEXTO")
+                                err.Description = "Incongruencia en archivos de recurso"
                                 GoTo ErrHandler
                             End If
                         
@@ -1350,9 +1321,9 @@ On Local Error GoTo ErrHandler
                                 'Update
                                 DataOutputPos = DataOutputPos + UBound(data) + 1
                                 WrittenFiles = WrittenFiles + 1
-                                If Not prgBar Is Nothing Then prgBar.value = WrittenFiles
+                                If Not prgBar Is Nothing Then prgBar.Value = WrittenFiles
                             Else
-                                Err.Description = JsonLanguage.Item("ERROR_VERSIONES_RECURSOS").Item("TEXTO")
+                                err.Description = "Incongruencia en archivos de recurso"
                                 GoTo ErrHandler
                             End If
                     End Select
@@ -1374,7 +1345,7 @@ On Local Error GoTo ErrHandler
                     'Update
                     DataOutputPos = DataOutputPos + UBound(data) + 1
                     WrittenFiles = WrittenFiles + 1
-                    If Not prgBar Is Nothing Then prgBar.value = WrittenFiles
+                    If Not prgBar Is Nothing Then prgBar.Value = WrittenFiles
                     DoEvents
                 Wend
             
@@ -1395,7 +1366,7 @@ On Local Error GoTo ErrHandler
             Name OutputFilePath As ResourceFilePath
 
     Else
-        Err.Description = JsonLanguage.Item("ERROR_LEER_PARCHE").Item("TEXTO")
+        err.Description = "Falla al procesar parche"
         GoTo ErrHandler
     End If
     
@@ -1409,7 +1380,7 @@ ErrHandler:
     'Destroy file if created
     If FileExist(OutputFilePath, vbNormal) Then Call Kill(OutputFilePath)
     
-    Call MsgBox(Replace$(JsonLanguage.Item("ERROR_CREAR_PARCHE").Item("TEXTO"), "VAR_ERROR", Err.number & " : " & Err.Description), vbOKOnly, JsonLanguage.Item("Error").Item("TEXTO"))
+    Call MsgBox("No se pudo parchear. Razón: " & err.number & " : " & err.Description, vbOKOnly, "Error")
 End Function
 
 Private Function AlignScan(ByVal inWidth As Long, ByVal inDepth As Integer) As Long
@@ -1429,7 +1400,7 @@ End Function
 
 Public Function GetVersion(ByVal ResourceFilePath As String) As Long
 '*****************************************************************
-'Author: Juan Martin Sotuyo Dodero (Maraxus)
+'Author: Juan Martín Sotuyo Dodero (Maraxus)
 'Last Modify Date: 11/23/2008
 '
 '*****************************************************************
@@ -1445,4 +1416,3 @@ Public Function GetVersion(ByVal ResourceFilePath As String) As Long
     
     GetVersion = FileHead.lngFileVersion
 End Function
-
