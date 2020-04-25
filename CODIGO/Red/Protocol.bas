@@ -2111,7 +2111,7 @@ Private Sub HandleChangeMap()
         
         Call SwitchMap(UserMap)
         
-        If bRain And bLluvia(UserMap) = 0 Then
+        If bRain And MapDat.zone = "DUNGEON" Then
             Call Audio.StopWave(RainBufferIndex)
             RainBufferIndex = 0
             frmMain.IsPlaying = PlayLoop.plNone
@@ -3132,7 +3132,7 @@ Private Sub HandleRainToggle()
         MapData(UserPos.X, UserPos.Y).Trigger = eTrigger.CASA Or _
         MapData(UserPos.X, UserPos.Y).Trigger = eTrigger.ZONASEGURA)
 
-    If bRain And bLluvia(UserMap) Then
+    If bRain And MapDat.zone <> "DUNGEON" Then
         'Stop playing the rain sound
         Call Audio.StopWave(RainBufferIndex)
         RainBufferIndex = 0
