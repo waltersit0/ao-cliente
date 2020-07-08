@@ -5163,9 +5163,13 @@ On Error GoTo errhandler
         Call InvOfferComUsu(1).SetItem(OfferSlot, OBJIndex, Amount, 0, GrhIndex, OBJType, MaxHit, MinHit, MaxDef, MinDef, SalePrice, Name)
     End If
     
-errhandler:
-    Dim Error As Long
+    Call frmComerciarUsu.PrintCommerceMsg(TradingUserName & JsonLanguage.item("MENSAJE_COMM_OFERTA_CAMBIA").item("TEXTO"), FontTypeNames.FONTTYPE_VENENO)
     
+errhandler:
+
+    Dim Error As Long
+        Error = Err.number
+        
     On Error GoTo 0
     
     'Destroy auxiliar buffer
