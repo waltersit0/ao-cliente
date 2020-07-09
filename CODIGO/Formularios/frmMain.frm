@@ -1,5 +1,5 @@
 VERSION 5.00
-Object = "{3B7C8863-D78F-101B-B9B5-04021C009402}#1.2#0"; "RICHTX32.ocx"
+Object = "{3B7C8863-D78F-101B-B9B5-04021C009402}#1.2#0"; "RICHTX32.OCX"
 Begin VB.Form frmMain 
    Appearance      =   0  'Flat
    BackColor       =   &H80000005&
@@ -1713,7 +1713,7 @@ Private Sub imgAsignarSkill_Click()
     LlegaronSkills = False
     
     For i = 1 To NUMSKILLS
-        frmSkills3.text1(i).Caption = UserSkills(i)
+        frmSkills3.Text1(i).Caption = UserSkills(i)
     Next i
     
     Alocados = SkillPoints
@@ -2215,13 +2215,8 @@ End Sub
 
 Private Sub MainViewPic_MouseDown(Button As Integer, _
                                   Shift As Integer, _
-<<<<<<< HEAD
                                   x As Single, _
                                   y As Single)
-=======
-                                  X As Single, _
-                                  Y As Single)
->>>>>>> parent of 9a15fed2... Reparado el error de borrar cartel.
     MouseBoton = Button
     MouseShift = Shift
 End Sub
