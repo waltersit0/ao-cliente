@@ -267,7 +267,6 @@ Begin VB.Form frmMain
       _ExtentY        =   2937
       _Version        =   393217
       BackColor       =   0
-      Enabled         =   -1  'True
       ReadOnly        =   -1  'True
       ScrollBars      =   2
       DisableNoScroll =   -1  'True
@@ -1189,20 +1188,20 @@ Private Sub Form_Activate()
     Call Inventario.DrawInventory
 End Sub
 
-Private Sub BarritaMover_MouseDown(Button As Integer, Shift As Integer, x As Single, y As Single)
+Private Sub BarritaMover_MouseDown(Button As Integer, Shift As Integer, X As Single, Y As Single)
     If Not ResolucionCambiada Then
-        BoldX = x
-        BoldY = y
+        BoldX = X
+        BoldY = Y
         BisMoving = True
     End If
 End Sub
-Private Sub BarritaMover_MouseMove(Button As Integer, Shift As Integer, x As Single, y As Single)
+Private Sub BarritaMover_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As Single)
     If BisMoving Then
-        Me.Top = Me.Top - (BoldY - y)
-        Me.Left = Me.Left - (BoldX - x)
+        Me.Top = Me.Top - (BoldY - Y)
+        Me.Left = Me.Left - (BoldX - X)
     End If
 End Sub
-Private Sub BarritaMover_MouseUp(Button As Integer, Shift As Integer, x As Single, y As Single)
+Private Sub BarritaMover_MouseUp(Button As Integer, Shift As Integer, X As Single, Y As Single)
     BisMoving = False
 End Sub
 
@@ -1668,14 +1667,14 @@ Private Sub Form_KeyUp(KeyCode As Integer, Shift As Integer)
     End Select
 End Sub
 
-Private Sub Form_MouseDown(Button As Integer, Shift As Integer, x As Single, y As Single)
+Private Sub Form_MouseDown(Button As Integer, Shift As Integer, X As Single, Y As Single)
     MouseBoton = Button
     MouseShift = Shift
 End Sub
 
-Private Sub Form_MouseUp(Button As Integer, Shift As Integer, x As Single, y As Single)
-    clicX = x
-    clicY = y
+Private Sub Form_MouseUp(Button As Integer, Shift As Integer, X As Single, Y As Single)
+    clicX = X
+    clicY = Y
 End Sub
 
 Private Sub Form_QueryUnload(Cancel As Integer, UnloadMode As Integer)
@@ -1765,8 +1764,8 @@ End Sub
 
 Private Sub InvEqu_MouseMove(Button As Integer, _
                              Shift As Integer, _
-                             x As Single, _
-                             y As Single)
+                             X As Single, _
+                             Y As Single)
     LastButtonPressed.ToggleToNormal
 End Sub
 
@@ -1996,8 +1995,8 @@ End Sub
 
 Private Sub RecTxt_MouseMove(Button As Integer, _
                              Shift As Integer, _
-                             x As Single, _
-                             y As Single)
+                             X As Single, _
+                             Y As Single)
     StartCheckingLinks
 End Sub
 
@@ -2081,8 +2080,8 @@ Private Sub SendTxt_KeyUp(KeyCode As Integer, Shift As Integer)
         KeyCode = 0
         SendTxt.Visible = False
         
-        If picInv.Visible Then
-            picInv.SetFocus
+        If PicInv.Visible Then
+            PicInv.SetFocus
         Else
             hlst.SetFocus
         End If
@@ -2189,8 +2188,8 @@ End Sub
 
 Private Sub btnLanzar_MouseMove(Button As Integer, _
                                 Shift As Integer, _
-                                x As Single, _
-                                y As Single)
+                                X As Single, _
+                                Y As Single)
     UsaMacro = False
     CnTd = 0
 End Sub
@@ -2215,26 +2214,28 @@ End Sub
 
 Private Sub MainViewPic_MouseDown(Button As Integer, _
                                   Shift As Integer, _
-                                  x As Single, _
-                                  y As Single)
+                                  X As Single, _
+                                  Y As Single)
+If SendTxt.Visible Then SendTxt.SetFocus 'sacar cartel en dx8 BelerianD
+                                  
     MouseBoton = Button
     MouseShift = Shift
 End Sub
 
 Private Sub MainViewPic_MouseMove(Button As Integer, _
                                   Shift As Integer, _
-                                  x As Single, _
-                                  y As Single)
-    MouseX = x
-    MouseY = y
+                                  X As Single, _
+                                  Y As Single)
+    MouseX = X
+    MouseY = Y
 End Sub
 
 Private Sub MainViewPic_MouseUp(Button As Integer, _
                                 Shift As Integer, _
-                                x As Single, _
-                                y As Single)
-    clicX = x
-    clicY = y
+                                X As Single, _
+                                Y As Single)
+    clicX = X
+    clicY = Y
 End Sub
 
 Private Sub MainViewPic_DblClick()
@@ -2395,9 +2396,9 @@ Private Sub Form_DblClick()
     End If
 End Sub
 
-Private Sub Form_MouseMove(Button As Integer, Shift As Integer, x As Single, y As Single)
-    MouseX = x - MainViewPic.Left
-    MouseY = y - MainViewPic.Top
+Private Sub Form_MouseMove(Button As Integer, Shift As Integer, X As Single, Y As Single)
+    MouseX = X - MainViewPic.Left
+    MouseY = Y - MainViewPic.Top
     
     'Trim to fit screen
     If MouseX < 0 Then
@@ -2446,7 +2447,7 @@ Private Sub btnInventario_Click()
     Call Audio.PlayWave(SND_CLICK)
 
     ' Activo controles de inventario
-    picInv.Visible = True
+    PicInv.Visible = True
 
     ' Desactivo controles de hechizo
     hlst.Visible = False
@@ -2474,7 +2475,7 @@ Private Sub btnHechizos_Click()
     cmdMoverHechi(1).Visible = True
     
     ' Desactivo controles de inventario
-    picInv.Visible = False
+    PicInv.Visible = False
 
 End Sub
 
@@ -2512,7 +2513,7 @@ Private Sub picInv_DblClick()
     
 End Sub
 
-Private Sub picInv_MouseUp(Button As Integer, Shift As Integer, x As Single, y As Single)
+Private Sub picInv_MouseUp(Button As Integer, Shift As Integer, X As Single, Y As Single)
     Call Audio.PlayWave(SND_CLICK)
 End Sub
 
@@ -2536,8 +2537,8 @@ Private Sub RecTxt_Change()
            (Not frmCantidad.Visible) And _
            (Not MirandoParty) Then
 
-        If picInv.Visible Then
-            picInv.SetFocus
+        If PicInv.Visible Then
+            PicInv.SetFocus
                         
         ElseIf hlst.Visible Then
             hlst.SetFocus
@@ -2550,8 +2551,8 @@ End Sub
 
 Private Sub RecTxt_KeyDown(KeyCode As Integer, Shift As Integer)
 
-    If picInv.Visible Then
-        picInv.SetFocus
+    If PicInv.Visible Then
+        PicInv.SetFocus
     Else
         hlst.SetFocus
     End If
@@ -2616,8 +2617,8 @@ Private Sub SendCMSTXT_KeyUp(KeyCode As Integer, Shift As Integer)
         KeyCode = 0
         Me.SendCMSTXT.Visible = False
         
-        If picInv.Visible Then
-            picInv.SetFocus
+        If PicInv.Visible Then
+            PicInv.SetFocus
         Else
             hlst.SetFocus
         End If
@@ -2868,15 +2869,15 @@ End Sub
 '***************************************************
 Private Sub Minimapa_MouseDown(Button As Integer, _
                                Shift As Integer, _
-                               x As Single, _
-                               y As Single)
-   If x > 87 Then x = 86
-   If x < 14 Then x = 15
-   If y > 90 Then y = 89
-   If y < 11 Then y = 12
+                               X As Single, _
+                               Y As Single)
+   If X > 87 Then X = 86
+   If X < 14 Then X = 15
+   If Y > 90 Then Y = 89
+   If Y < 11 Then Y = 12
 
    If Button = vbRightButton Then
-      Call WriteWarpChar("YO", UserMap, CByte(x - 1), CByte(y - 1))
+      Call WriteWarpChar("YO", UserMap, CByte(X - 1), CByte(Y - 1))
       Call ActualizarMiniMapa
    End If
 End Sub
@@ -2890,10 +2891,10 @@ Public Sub ActualizarMiniMapa()
     'Ajustadas las coordenadas para centrarlo (WyroX)
     'Ajuste de coordenadas y tamaño del visor (ReyarB)
     '***************************************************
-    Me.UserM.Left = UserPos.x - 2
-    Me.UserM.Top = UserPos.y - 2
-    Me.UserAreaMinimap.Left = UserPos.x - 13
-    Me.UserAreaMinimap.Top = UserPos.y - 11
+    Me.UserM.Left = UserPos.X - 2
+    Me.UserM.Top = UserPos.Y - 2
+    Me.UserAreaMinimap.Left = UserPos.X - 13
+    Me.UserAreaMinimap.Top = UserPos.Y - 11
     Me.MiniMapa.Refresh
 End Sub
 
