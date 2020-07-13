@@ -680,9 +680,9 @@ Private Sub uAOBorrarPersonaje_Click()
       If Not frmMain.Client.State = sckConnected Then
          MsgBox JsonLanguage.item("ERROR_CONN_LOST").item("TEXTO")
          AccountName = vbNullString
-         AccountHash = vbNullString
          NumberOfCharacters = 0
          Unload Me
+         
       Else
          UserName = cPJ(Seleccionado).Nombre
          Call WriteDeleteChar
@@ -690,6 +690,7 @@ Private Sub uAOBorrarPersonaje_Click()
       End If
 
    End If
+   
 End Sub
 
 Private Sub uAOConectar_Click()
@@ -702,12 +703,13 @@ Private Sub uAOConectar_Click()
     If Not frmMain.Client.State = sckConnected Then
         MsgBox JsonLanguage.item("ERROR_CONN_LOST").item("TEXTO")
         AccountName = vbNullString
-        AccountHash = vbNullString
         NumberOfCharacters = 0
         Unload Me
+        
     Else
         UserName = lblAccData(Seleccionado).Caption
         Call WriteLoginExistingChar
+        
     End If
 
 End Sub
@@ -771,8 +773,10 @@ Private Sub picChar_DblClick(Index As Integer)
     If LenB(lblAccData(Seleccionado).Caption) <> 0 Then
         UserName = lblAccData(Seleccionado).Caption
         Call WriteLoginExistingChar
+        
     Else
         frmCrearPersonaje.Show
+        
     End If
 
 End Sub

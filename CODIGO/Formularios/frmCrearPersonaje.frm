@@ -1509,11 +1509,6 @@ Function CheckData() As Boolean
         MsgBox JsonLanguage.item("VALIDACION_HOGAR").item("TEXTO")
         Exit Function
     End If
-    
-    If Len(AccountHash) = 0 Then
-        MsgBox JsonLanguage.item("VALIDACION_HASH").item("TEXTO")
-        Exit Function
-    End If
 
     'Toqueteado x Salvito
     Dim i As Integer

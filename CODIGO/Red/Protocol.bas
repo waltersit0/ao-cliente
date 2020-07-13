@@ -5738,9 +5738,7 @@ Public Sub WriteDeleteChar()
 '***************************************************
     With outgoingData
         Call .WriteByte(ClientPacketID.DeleteChar)
-        
         Call .WriteASCIIString(UserName)
-        Call .WriteASCIIString(AccountHash)
     End With
 End Sub
 
@@ -5756,17 +5754,19 @@ Public Sub WriteLoginExistingChar()
 'CHOTS: Accounts
 'Writes the "LoginExistingChar" message to the outgoing data buffer
 '***************************************************
+    
     With outgoingData
+    
         Call .WriteByte(ClientPacketID.LoginExistingChar)
         
         Call .WriteASCIIString(UserName)
-        
-        Call .WriteASCIIString(AccountHash)
-        
+
         Call .WriteByte(App.Major)
         Call .WriteByte(App.Minor)
         Call .WriteByte(App.Revision)
+        
     End With
+    
 End Sub
 
 Public Sub WriteLoginNewAccount()
@@ -5819,7 +5819,6 @@ Public Sub WriteLoginNewChar()
         Call .WriteByte(ClientPacketID.LoginNewChar)
         
         Call .WriteASCIIString(UserName)
-        Call .WriteASCIIString(AccountHash)
         
         Call .WriteByte(App.Major)
         Call .WriteByte(App.Minor)
@@ -11073,7 +11072,7 @@ End Sub
 
 Private Sub HandleAccountLogged()
 
-    If incomingData.Length < 30 Then
+    If incomingData.Length < 5 Then
         Err.Raise incomingData.NotEnoughDataErrCode
         Exit Sub
     End If
@@ -11089,10 +11088,10 @@ Private Sub HandleAccountLogged()
     Call Buffer.ReadByte
 
     AccountName = Buffer.ReadASCIIString
-    AccountHash = Buffer.ReadASCIIString
+    
     NumberOfCharacters = Buffer.ReadByte
 
-    frmPanelAccount.Show
+    Call frmPanelAccount.Show
 
     If NumberOfCharacters > 0 Then
     
@@ -11138,7 +11137,9 @@ Private Sub HandleAccountLogged()
 
     'If we got here then packet is complete, copy data back to original queue
     Call incomingData.CopyBuffer(Buffer)
-
+    
+    Exit Sub
+    
 errhandler:
 
     Dim Error As Long
